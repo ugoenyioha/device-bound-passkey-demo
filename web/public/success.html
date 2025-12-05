@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Successful - Passkey Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .success-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 40px;
+        }
+        h1 {
+            color: #1d1d1f;
+            margin: 0 0 8px 0;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #86868b;
+            font-size: 16px;
+            margin-bottom: 32px;
+        }
+        .user-info {
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+        }
+        .username {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+        }
+        .user-id {
+            font-size: 12px;
+            color: #86868b;
+        }
+        .passkey-details {
+            text-align: left;
+            margin-top: 24px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e5e7;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            color: #86868b;
+            font-size: 14px;
+        }
+        .detail-value {
+            font-weight: 600;
+            color: #1d1d1f;
+            font-size: 14px;
+        }
+        .detail-value.secure {
+            color: #34c759;
+        }
+        .detail-value.warning {
+            color: #ff9500;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-green {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-blue {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .badge-orange {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-gray {
+            background: #e9ecef;
+            color: #495057;
+        }
+        .actions {
+            margin-top: 24px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 4px;
+        }
+        .btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+        .btn-secondary {
+            background: #e8e8ed;
+            color: #1d1d1f;
+        }
+        .security-info {
+            margin-top: 24px;
+            padding: 16px;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-radius: 12px;
+            text-align: left;
+        }
+        .security-title {
+            font-weight: 600;
+            color: #155724;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .security-text {
+            font-size: 13px;
+            color: #155724;
+            line-height: 1.5;
+        }
+        .timestamp {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #86868b;
+        }
+        .attestation-card {
+            background: #f5f5f7;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: left;
+        }
+        .attestation-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .attestation-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #34c759 0%, #30d158 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .attestation-icon.warning {
+            background: linear-gradient(135deg, #ff9500 0%, #ff9f0a 100%);
+        }
+        .attestation-title {
+            font-weight: 600;
+            color: #1d1d1f;
+            font-size: 16px;
+        }
+        .attestation-subtitle {
+            color: #86868b;
+            font-size: 13px;
+        }
+        .attestation-details {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        .attestation-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        .attestation-row:last-child {
+            border-bottom: none;
+        }
+        .attestation-label {
+            color: #86868b;
+        }
+        .attestation-value {
+            color: #1d1d1f;
+            font-weight: 500;
+            font-family: monospace;
+            font-size: 11px;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .verification-badge.verified {
+            background: #d4edda;
+            color: #155724;
+        }
+        .verification-badge.unverified {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .flags-display {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .flag-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .flag-badge.set {
+            background: #d4edda;
+            color: #155724;
+        }
+        .flag-badge.unset {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-card">
+        <div class="success-icon">✓</div>
+        <h1>Welcome Back!</h1>
+        <p class="subtitle">You've successfully signed in with your passkey</p>
+
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">?</div>
+            <div class="username" id="username">Loading...</div>
+            <div class="user-id" id="userId"></div>
+        </div>
+
+        <div class="passkey-details">
+            <div class="detail-row">
+                <span class="detail-label">Authentication Method</span>
+                <span class="detail-value">
+                    <span class="badge badge-blue">Passkey</span>
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Credential Type</span>
+                <span class="detail-value" id="credentialType">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Counter Verified</span>
+                <span class="detail-value" id="counterStatus">-</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Login Time</span>
+                <span class="detail-value" id="loginTime">-</span>
+            </div>
+        </div>
+
+        <div class="security-info" id="securityInfo">
+            <div class="security-title">
+                <span>🔒</span>
+                <span>Device-Bound Passkey</span>
+            </div>
+            <div class="security-text">
+                Your passkey is securely stored in the device's Secure Enclave.
+                It cannot be exported or synced to other devices, providing the highest level of security.
+            </div>
+        </div>
+
+        <!-- Attestation Proof Section -->
+        <div class="attestation-section" id="attestationSection" style="display: none;">
+            <h3 style="color: #1d1d1f; margin: 24px 0 16px 0; font-size: 16px;">Attestation Proof</h3>
+            <div class="attestation-card" id="attestationCard">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn btn-primary">Continue</a>
+            <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
+
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        // SECURITY: HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Parse URL parameters
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('username') || 'Unknown User';
+        const isDeviceBound = params.get('isDeviceBound') === 'true';
+        const isThirdPartyExtension = params.get('isThirdPartyExtension') === 'true';
+        const credentialBackedUp = params.get('credentialBackedUp') === 'true';
+        const registrationMethod = params.get('registrationMethod') || 'browser';
+        const counterIncremented = params.get('counterIncremented') === 'true';
+
+        // Update UI with user info - use textContent for safety (auto-escapes)
+        document.getElementById('username').textContent = username;
+        document.getElementById('userAvatar').textContent = (username.charAt(0) || '?').toUpperCase();
+        document.getElementById('userId').textContent = 'Authenticated via WebAuthn';
+
+        // Credential type - now accounts for third-party extensions
+        // IMPORTANT: iOS third-party credential providers MUST set BE+BS flags for hybrid transport,
+        // but the credential may still be device-bound in Secure Enclave.
+        // Only App Attestation can truly verify device-binding.
+        const credTypeEl = document.getElementById('credentialType');
+        if (isThirdPartyExtension || registrationMethod === 'direct-ios-extension') {
+            // Third-party extension - may be device-bound despite BE+BS flags
+            credTypeEl.innerHTML = '<span class="badge badge-blue">Third-Party</span>';
+        } else if (isDeviceBound) {
+            credTypeEl.innerHTML = '<span class="badge badge-green">Device-Bound</span>';
+        } else if (credentialBackedUp) {
+            credTypeEl.innerHTML = '<span class="badge badge-orange">Synced</span>';
+        } else {
+            credTypeEl.innerHTML = '<span class="badge badge-gray">Unknown</span>';
+        }
+
+        // Counter status
+        const counterEl = document.getElementById('counterStatus');
+        if (counterIncremented) {
+            counterEl.innerHTML = '<span class="detail-value secure">✓ Incremented</span>';
+        } else {
+            counterEl.innerHTML = '<span class="detail-value warning">⚠ Not Incremented</span>';
+        }
+
+        // Login time
+        const now = new Date();
+        document.getElementById('loginTime').textContent = now.toLocaleTimeString();
+        document.getElementById('timestamp').textContent = `Session started: ${now.toLocaleString()}`;
+
+        // Update security info based on credential type
+        const securityInfo = document.getElementById('securityInfo');
+        if (isThirdPartyExtension || registrationMethod === 'direct-ios-extension') {
+            // Third-party extension credential
+            securityInfo.style.background = 'linear-gradient(135deg, #cce5ff 0%, #b8daff 100%)';
+            securityInfo.innerHTML = `
+                <div class="security-title" style="color: #004085;">
+                    <span>📱</span>
+                    <span>Third-Party Credential Provider</span>
+                </div>
+                <div class="security-text" style="color: #004085;">
+                    This passkey was created by a third-party credential provider app.
+                    BE+BS flags are required for cross-device auth, but the key may still be
+                    device-bound in Secure Enclave. Verify via App Attestation.
+                </div>
+            `;
+        } else if (!isDeviceBound && credentialBackedUp) {
+            securityInfo.style.background = 'linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%)';
+            securityInfo.innerHTML = `
+                <div class="security-title" style="color: #856404;">
+                    <span>☁️</span>
+                    <span>Synced Passkey</span>
+                </div>
+                <div class="security-text" style="color: #856404;">
+                    Your passkey is synced across your devices via iCloud Keychain.
+                    While convenient, it may be accessible from multiple devices.
+                </div>
+            `;
+        }
+
+        // Fetch additional credential details from server using the proper API
+        async function loadCredentialDetails() {
+            try {
+                // Use the new credential lookup API
+                const res = await fetch(`/api/user/${encodeURIComponent(username)}/credentials`);
+                if (!res.ok) {
+                    console.error('Failed to fetch credentials:', res.status);
+                    // Show fallback attestation section even if lookup fails
+                    // HIDDEN: Attestation proof section disabled
+                    // showAttestationProof({
+                    //     hasAppAttestation: false,
+                    //     isDeviceBound: isDeviceBound,
+                    //     deviceBoundVerification: 'Credential details not available',
+                    //     attestationReason: 'Server lookup failed',
+                    //     authenticatorFlags: null,
+                    //     credentialID: 'N/A',
+                    //     isThirdPartyExtension: isThirdPartyExtension,
+                    //     registrationMethod: registrationMethod
+                    // });
+                    return;
+                }
+                const user = await res.json();
+
+                if (user && user.credentials && user.credentials.length > 0) {
+                    // Use the most recent credential
+                    const cred = user.credentials[user.credentials.length - 1];
+
+                    // Update with more details
+                    const details = document.querySelector('.passkey-details');
+
+                    // Add attestation status if available
+                    if (cred.hasAppAttestation !== undefined) {
+                        const attestRow = document.createElement('div');
+                        attestRow.className = 'detail-row';
+                        attestRow.innerHTML = `
+                            <span class="detail-label">App Attestation</span>
+                            <span class="detail-value ${cred.hasAppAttestation ? 'secure' : ''}">
+                                ${cred.hasAppAttestation ? '✓ Verified' : 'Not Available'}
+                            </span>
+                        `;
+                        details.insertBefore(attestRow, details.children[2]);
+                    }
+
+                    // Add counter value
+                    if (cred.counter !== undefined) {
+                        const counterRow = document.createElement('div');
+                        counterRow.className = 'detail-row';
+                        counterRow.innerHTML = `
+                            <span class="detail-label">Sign Count</span>
+                            <span class="detail-value">${cred.counter}</span>
+                        `;
+                        details.appendChild(counterRow);
+                    }
+
+                    // Add registration method
+                    if (cred.registrationMethod) {
+                        const methodRow = document.createElement('div');
+                        methodRow.className = 'detail-row';
+                        methodRow.innerHTML = `
+                            <span class="detail-label">Registered Via</span>
+                            <span class="detail-value">${cred.registrationMethod === 'direct-ios-extension' ? 'iOS App' : 'Browser'}</span>
+                        `;
+                        details.appendChild(methodRow);
+                    }
+
+                    // Show attestation proof section - HIDDEN
+                    // showAttestationProof(cred);
+                }
+            } catch (error) {
+                console.error('Failed to load credential details:', error);
+            }
+        }
+
+        function showAttestationProof(cred) {
+            const section = document.getElementById('attestationSection');
+            const card = document.getElementById('attestationCard');
+
+            section.style.display = 'block';
+
+            // Parse authenticator flags if available
+            let flagsHtml = '';
+            if (cred.authenticatorFlags) {
+                // Sanitize the flags value - should only be a hex string
+                const safeFlags = escapeHtml(cred.authenticatorFlags);
+                const flags = parseInt(String(cred.authenticatorFlags).replace('0x', ''), 16) || 0;
+                const UP = (flags & 0x01) !== 0;
+                const UV = (flags & 0x04) !== 0;
+                const AT = (flags & 0x40) !== 0;
+                const BE = (flags & 0x08) !== 0;
+                const BS = (flags & 0x10) !== 0;
+
+                flagsHtml = `
+                    <div class="flags-display">
+                        <span class="flag-badge ${UP ? 'set' : 'unset'}">UP ${UP ? '✓' : '✗'}</span>
+                        <span class="flag-badge ${UV ? 'set' : 'unset'}">UV ${UV ? '✓' : '✗'}</span>
+                        <span class="flag-badge ${AT ? 'set' : 'unset'}">AT ${AT ? '✓' : '✗'}</span>
+                        <span class="flag-badge ${!BE ? 'set' : 'unset'}">BE ${BE ? '✗ (synced)' : '✓ (device-bound)'}</span>
+                        <span class="flag-badge ${!BS ? 'set' : 'unset'}">BS ${BS ? '✗ (backed up)' : '✓ (not backed up)'}</span>
+                    </div>
+                `;
+            }
+
+            // SECURITY: Check for attestation - now properly distinguishes between verified and present
+            const hasAttestation = cred.hasAppAttestation === true;
+            const attestationPresent = cred.attestationPresent === true;
+            const iconClass = hasAttestation ? '' : 'warning';
+            const icon = hasAttestation ? '🛡️' : (attestationPresent ? '⚠️' : '⚠️');
+            const title = hasAttestation ? 'Apple App Attestation Verified' :
+                         (attestationPresent ? 'Attestation Received (Unverified)' : 'Attestation Not Available');
+            const subtitle = hasAttestation
+                ? 'Hardware authenticity cryptographically proven'
+                : (attestationPresent ? 'Demo mode - CA chain validation required for production' : 'Running in development mode without attestation');
+
+            // SECURITY: Escape all server-provided strings to prevent XSS
+            const safeVerificationReason = escapeHtml(cred.deviceBoundVerification || 'N/A');
+            const safeAttestationReason = escapeHtml(cred.attestationReason || 'N/A');
+            const safeCredentialID = escapeHtml(cred.credentialID ? String(cred.credentialID).substring(0, 32) : 'N/A');
+            const safeFullCredentialID = escapeHtml(cred.credentialID || '');
+            const safeAuthFlags = cred.authenticatorFlags ? escapeHtml(cred.authenticatorFlags) : '';
+
+            card.innerHTML = `
+                <div class="attestation-header">
+                    <div class="attestation-icon ${iconClass}">${icon}</div>
+                    <div>
+                        <div class="attestation-title">${escapeHtml(title)}</div>
+                        <div class="attestation-subtitle">${escapeHtml(subtitle)}</div>
+                    </div>
+                </div>
+
+                <div class="attestation-details">
+                    <div class="attestation-row">
+                        <span class="attestation-label">Device-Bound Verification</span>
+                        <span class="verification-badge ${cred.isDeviceBound ? 'verified' : 'unverified'}">
+                            ${cred.isDeviceBound ? '✓ Verified' : '⚠ Unverified'}
+                        </span>
+                    </div>
+                    <div class="attestation-row">
+                        <span class="attestation-label">Verification Reason</span>
+                        <span class="attestation-value" style="max-width: none; font-family: inherit;">
+                            ${safeVerificationReason}
+                        </span>
+                    </div>
+                    <div class="attestation-row">
+                        <span class="attestation-label">App Attestation</span>
+                        <span class="verification-badge ${hasAttestation ? 'verified' : 'unverified'}">
+                            ${hasAttestation ? '✓ Verified' : (attestationPresent ? '⚠ Received (Unverified)' : '⚠ Not Provided')}
+                        </span>
+                    </div>
+                    <div class="attestation-row">
+                        <span class="attestation-label">Attestation Details</span>
+                        <span class="attestation-value" style="max-width: none; font-family: inherit;">
+                            ${safeAttestationReason}
+                        </span>
+                    </div>
+                    ${cred.authenticatorFlags ? `
+                    <div class="attestation-row" style="flex-direction: column; align-items: flex-start;">
+                        <span class="attestation-label">Authenticator Flags (${safeAuthFlags})</span>
+                        ${flagsHtml}
+                    </div>
+                    ` : ''}
+                    <div class="attestation-row">
+                        <span class="attestation-label">Credential ID</span>
+                        <span class="attestation-value" title="${safeFullCredentialID}">
+                            ${safeCredentialID}${cred.credentialID ? '...' : ''}
+                        </span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px; padding: 12px; background: ${hasAttestation ? '#d4edda' : '#fff3cd'}; border-radius: 8px; font-size: 12px; color: ${hasAttestation ? '#155724' : '#856404'};">
+                    <strong>${hasAttestation ? '🔒 Hardware Security:' : '⚠️ Development Mode:'}</strong>
+                    ${hasAttestation
+                        ? 'This passkey was created on genuine Apple hardware with Secure Enclave protection. The private key never leaves the device.'
+                        : 'App Attestation requires Apple CA chain validation in production. Attestation data was ' + (attestationPresent ? 'received but not verified.' : 'not provided.')}
+                </div>
+            `;
+        }
+
+        loadCredentialDetails();
+    </script>
+</body>
+</html>

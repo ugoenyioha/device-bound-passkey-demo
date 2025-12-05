@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: passkeydemo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: passkeydemo-config
+  namespace: passkeydemo
+data:
+  RP_ID: "passkeydemo.usableapps.local"
+  ORIGIN: "https://passkeydemo.usableapps.local"
+  PORT: "3001"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: passkeydemo
+  namespace: passkeydemo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: passkeydemo
+  template:
+    metadata:
+      labels:
+        app: passkeydemo
+    spec:
+      containers:
+      - name: passkeydemo
+        image: passkeydemo:latest
+        imagePullPolicy: Never
+        envFrom:
+        - configMapRef:
+            name: passkeydemo-config
+        ports:
+        - containerPort: 3001
+          name: http
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: passkeydemo
+  namespace: passkeydemo
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http
+  selector:
+    app: passkeydemo
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: passkeydemo
+  namespace: passkeydemo
+  annotations:
+    cert-manager.io/cluster-issuer: local-vault-issuer
+    cert-manager.io/common-name: passkeydemo.usableapps.local
+    cert-manager.io/private-key-algorithm: ECDSA
+    cert-manager.io/private-key-size: "256"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: passkeydemo.usableapps.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: passkeydemo
+            port:
+              number: 3001
+  tls:
+  - hosts:
+    - passkeydemo.usableapps.local
+    secretName: passkeydemo-tls

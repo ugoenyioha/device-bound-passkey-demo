@@ -1,0 +1,130 @@
+@startuml cross-device-passkey-auth
+
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 200
+skinparam participantPadding 20
+skinparam boxPadding 10
+
+title Cross-Device Passkey Authentication Flow\n(Hybrid Transport - CTAP2)
+
+actor "User" as user
+participant "Browser\n(Desktop)" as browser #LightBlue
+participant "RP Server\n(Node.js)" as server #LightGreen
+participant "macOS\n(CTAP2)" as macos #LightYellow
+participant "iPhone\n(iOS 17+)" as iphone #Pink
+participant "Credential\nProvider" as provider #Orange
+
+== Initiation ==
+
+user -> browser: Click "Cross-Device (QR Code)"
+activate browser
+
+browser -> server: POST /auth/start
+activate server
+server --> browser: challenge + allowCredentials
+deactivate server
+
+browser -> macos: navigator.credentials.get({\n  transports: ['hybrid']\n})
+activate macos
+
+macos --> browser: Display QR Code\n(CTAP2 hybrid)
+note right of macos
+  QR contains:
+  • Routing ID
+  • Public key
+  • One-time token
+end note
+
+== QR Code Scanning ==
+
+user -> iphone: Scan QR with Camera
+activate iphone
+
+iphone <-> macos: BLE/Internet handshake\n(Encrypted tunnel)
+
+macos -> iphone: CTAP2\nauthenticatorGetAssertion
+note right of iphone
+  Request contains:
+  • rpId
+  • challenge
+  • allowCredentials
+end note
+
+== Credential Lookup ==
+
+iphone -> provider: Lookup credential\n(rpId: passkeydemo.usableapps.local)
+activate provider
+
+provider --> iphone: Found matching credential
+note right of provider
+  Checks:
+  • rpId match
+  • credentialId in allowList
+end note
+
+== User Verification ==
+
+iphone -> user: Face ID prompt
+user --> iphone: Authenticate with Face ID
+
+iphone -> provider: Sign with Secure Enclave
+note right of provider #LightYellow
+  **Authenticator Data Flags:**
+  • UP (0x01) = User Present ✓
+  • UV (0x04) = User Verified ✓
+  • **BE (0x08) = Backup Eligible ✓**
+  • **BS (0x10) = Backup State ✓**
+
+  Assertion flags: **0x1D**
+  (BE+BS required for hybrid!)
+end note
+
+provider --> iphone: Assertion:\n• authenticatorData\n• signature\n• userHandle
+deactivate provider
+
+== Response ==
+
+iphone --> macos: Assertion response\n(via encrypted tunnel)
+deactivate iphone
+
+macos --> browser: Credential assertion returned
+deactivate macos
+
+== Verification ==
+
+browser -> server: POST /auth/verify\n(assertion data)
+activate server
+
+note right of server
+  Server validates:
+  • rpIdHash matches
+  • Signature valid
+  • Flags: UP, UV, BE, BS
+  • Counter incremented
+end note
+
+server --> browser: Auth success + session
+deactivate server
+
+browser --> user: Redirect to success.html\n"Welcome Back!"
+deactivate browser
+
+== Legend ==
+
+note over browser, provider #LightGray
+  **Critical: BE+BS Flags**
+
+  For cross-device/hybrid auth to work, the credential provider
+  MUST set BE=1 and BS=1 in authenticator data.
+
+  Without these flags, iOS shows:
+  "You don't have any passkeys saved for this website or app."
+
+  • Registration: 0x5D = UP + UV + BE + BS + AT
+  • Assertion: 0x1D = UP + UV + BE + BS
+end note
+
+@enduml

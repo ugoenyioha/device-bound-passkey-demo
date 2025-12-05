@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passkey Demo - Relying Party</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f7;
+        }
+        h1 {
+            color: #1d1d1f;
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #1d1d1f;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d2d2d7;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        .btn-primary {
+            background: #0071e3;
+            color: white;
+        }
+        .btn-secondary {
+            background: #e8e8ed;
+            color: #1d1d1f;
+        }
+        .btn-danger {
+            background: #ff3b30;
+            color: white;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status.info {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #f5f5f7;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .toggle input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+        .debug-info {
+            font-family: monospace;
+            font-size: 12px;
+            background: #1d1d1f;
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .user-list {
+            list-style: none;
+            padding: 0;
+        }
+        .user-list li {
+            padding: 8px 12px;
+            background: #f5f5f7;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Passkey Demo</h1>
+    <p>WebAuthn Relying Party for iOS Device-Bound Passkeys</p>
+
+    <!-- Server Status Banner -->
+    <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 20px;">
+        <h2 style="color: white; margin: 0 0 12px 0;">📊 Server Status</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+                <div style="font-size: 14px; opacity: 0.9;">Total Passkeys Stored</div>
+                <div style="font-size: 32px; font-weight: bold;" id="totalPasskeys">0</div>
+            </div>
+            <div>
+                <div style="font-size: 14px; opacity: 0.9;">Registered Users</div>
+                <div style="font-size: 32px; font-weight: bold;" id="totalUsers">0</div>
+            </div>
+        </div>
+        <!-- Passkey Details -->
+        <div id="passkeyDetails" style="margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.3);"></div>
+        <div style="margin-top: 12px; font-size: 12px; opacity: 0.8;" id="lastUpdate">Last updated: Never</div>
+    </div>
+
+    <!-- Registration -->
+    <div class="card">
+        <h2>Register Passkey</h2>
+        <input type="text" id="regUsername" placeholder="Username" value="demo@example.com">
+        <button class="btn-primary" id="regButton" onclick="startRegistration()">Start Registration</button>
+        <div id="regStatus"></div>
+    </div>
+
+    <!-- Authentication -->
+    <div class="card">
+        <h2>Sign In with Passkey</h2>
+        <input type="text" id="authUsername" placeholder="Username (optional for discoverable)" autocomplete="username webauthn">
+        <button class="btn-primary" onclick="authenticatePasskey()">Sign In</button>
+        <button class="btn-secondary" onclick="authenticateDiscoverable()">Discoverable Sign In</button>
+        <button class="btn-secondary" onclick="authenticateCrossDevice()">📱 Cross-Device (QR Code)</button>
+        <div id="authStatus"></div>
+    </div>
+
+    <!-- Demo Controls -->
+    <div class="card">
+        <h2>Demo Controls</h2>
+        <div class="toggle">
+            <input type="checkbox" id="toggleAASA" onchange="toggleAASA()">
+            <label for="toggleAASA">
+                <strong>Simulate Missing AASA</strong><br>
+                <small>When enabled, iOS will show "You don't have any passkeys saved"</small>
+            </label>
+        </div>
+        <button class="btn-secondary" onclick="checkAASA()">Check AASA Status</button>
+        <button class="btn-danger" onclick="resetData()">Reset All Data</button>
+        <div id="demoStatus"></div>
+    </div>
+
+    <!-- Debug Info -->
+    <div class="card">
+        <h2>Registered Users</h2>
+        <button class="btn-secondary" onclick="loadUsers()">Refresh</button>
+        <ul class="user-list" id="userList">
+            <li>Click refresh to load users</li>
+        </ul>
+    </div>
+
+    <!-- Debug Log -->
+    <div class="card">
+        <h2>Debug Log</h2>
+        <div class="debug-info" id="debugLog">Ready...</div>
+    </div>
+
+    <script>
+        const API_BASE = '';
+
+        // SECURITY: HTML escape function to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function log(message) {
+            const logEl = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.textContent = `[${timestamp}] ${message}\n` + logEl.textContent;
+            console.log(message);
+        }
+
+        function showStatus(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.className = `status ${type}`;
+            el.textContent = message;
+        }
+
+        // Base64URL encoding/decoding
+        function base64URLEncode(buffer) {
+            return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function base64URLDecode(str) {
+            str = str.replace(/-/g, '+').replace(/_/g, '/');
+            while (str.length % 4) str += '=';
+            return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+        }
+
+        // Registration - Safari-compatible two-step approach
+        let registrationOptions = null;
+        let currentUsername = null;
+
+        // Step 1: Fetch options (can be async)
+        async function startRegistration() {
+            const username = document.getElementById('regUsername').value;
+            if (!username) {
+                showStatus('regStatus', 'Please enter a username', 'error');
+                return;
+            }
+
+            try {
+                log(`Fetching registration options for: ${username}`);
+                showStatus('regStatus', 'Preparing...', 'info');
+
+                // Get registration options
+                const optionsRes = await fetch(`${API_BASE}/api/register/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const options = await optionsRes.json();
+                log(`Got registration options: challenge=${options.challenge.substring(0, 20)}...`);
+
+                // Convert for WebAuthn API
+                options.challenge = base64URLDecode(options.challenge);
+                options.user.id = base64URLDecode(options.user.id);
+                if (options.excludeCredentials) {
+                    options.excludeCredentials = options.excludeCredentials.map(cred => ({
+                        ...cred,
+                        id: base64URLDecode(cred.id)
+                    }));
+                }
+
+                // Store options and username
+                registrationOptions = options;
+                currentUsername = username;
+
+                // Change button to trigger actual credential creation
+                const btn = document.getElementById('regButton');
+                btn.textContent = 'Create Passkey Now';
+                btn.onclick = createPasskey;
+                btn.classList.add('btn-danger');
+                showStatus('regStatus', 'Ready! Click "Create Passkey Now" to continue', 'success');
+                log('Options ready. Click button again to create credential.');
+
+            } catch (error) {
+                showStatus('regStatus', `Error: ${error.message}`, 'error');
+                log(`Registration prep error: ${error.message}`);
+            }
+        }
+
+        // Step 2: Create credential (direct call, no async before navigator.credentials)
+        async function createPasskey() {
+            if (!registrationOptions || !currentUsername) {
+                showStatus('regStatus', 'Error: Please start registration first', 'error');
+                return;
+            }
+
+            try {
+                // Create credential - DIRECT CALL from user gesture
+                log('Requesting credential creation...');
+                const credential = await navigator.credentials.create({ publicKey: registrationOptions });
+                log('Credential created successfully');
+
+                // Prepare response for server
+                const response = {
+                    id: credential.id,
+                    rawId: base64URLEncode(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        clientDataJSON: base64URLEncode(credential.response.clientDataJSON),
+                        attestationObject: base64URLEncode(credential.response.attestationObject),
+                        transports: credential.response.getTransports?.() || ['internal']
+                    },
+                    clientExtensionResults: credential.getClientExtensionResults()
+                };
+
+                // Verify with server
+                const verifyRes = await fetch(`${API_BASE}/api/register/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUsername, credential: response })
+                });
+                const result = await verifyRes.json();
+
+                if (result.verified) {
+                    showStatus('regStatus', `Passkey created for ${currentUsername}`, 'success');
+                    log(`Registration complete: ${result.credentialID.substring(0, 20)}...`);
+                    loadUsers();
+                } else {
+                    showStatus('regStatus', 'Registration failed', 'error');
+                    log(`Registration failed: ${JSON.stringify(result)}`);
+                }
+
+                // Reset button
+                const btn = document.getElementById('regButton');
+                btn.textContent = 'Start Registration';
+                btn.onclick = startRegistration;
+                btn.classList.remove('btn-danger');
+                registrationOptions = null;
+                currentUsername = null;
+
+            } catch (error) {
+                showStatus('regStatus', `Error: ${error.message}`, 'error');
+                log(`Registration error: ${error.message}`);
+
+                // Reset button on error
+                const btn = document.getElementById('regButton');
+                btn.textContent = 'Start Registration';
+                btn.onclick = startRegistration;
+                btn.classList.remove('btn-danger');
+                registrationOptions = null;
+                currentUsername = null;
+            }
+        }
+
+        // Authentication - Safari-compatible two-step approach
+        // Similar to registration, we separate option fetching from credential assertion
+        // to ensure the WebAuthn call happens directly in a user gesture handler
+        let authenticationOptions = null;
+        let authChallengeId = null;
+        let authUsername = null;
+
+        // Step 1: Fetch authentication options (async is OK here)
+        async function authenticatePasskey() {
+            const username = document.getElementById('authUsername').value;
+            await prepareAuthentication(username);
+        }
+
+        async function authenticateDiscoverable() {
+            await prepareAuthentication(null);
+        }
+
+        async function prepareAuthentication(username) {
+            try {
+                // Abort any pending conditional UI request first
+                if (conditionalAbortController) {
+                    log('Aborting background conditional UI request...');
+                    conditionalAbortController.abort();
+                    conditionalAbortController = null;
+                }
+
+                log(`Preparing authentication${username ? ` for: ${username}` : ' (discoverable)'}`);
+                showStatus('authStatus', 'Preparing...', 'info');
+
+                // Get authentication options
+                const optionsRes = await fetch(`${API_BASE}/api/authenticate/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+                const options = await optionsRes.json();
+
+                if (options.error) {
+                    showStatus('authStatus', `Error: ${options.error}`, 'error');
+                    log(`Auth options error: ${options.error}`);
+                    return;
+                }
+
+                authChallengeId = options._challengeId;
+                delete options._challengeId;
+                authUsername = username;
+
+                log(`Got auth options: challenge=${options.challenge.substring(0, 20)}...`);
+
+                // Convert for WebAuthn API
+                options.challenge = base64URLDecode(options.challenge);
+                if (options.allowCredentials) {
+                    options.allowCredentials = options.allowCredentials.map(cred => ({
+                        ...cred,
+                        id: base64URLDecode(cred.id)
+                    }));
+                    log(`  Allowed credentials: ${options.allowCredentials.length}`);
+                }
+
+                // Store options for next step
+                authenticationOptions = options;
+
+                // Update button to trigger actual assertion
+                const signInBtn = document.querySelector('button[onclick="authenticatePasskey()"]');
+                signInBtn.textContent = 'Complete Sign In';
+                signInBtn.onclick = performAuthentication;
+                signInBtn.classList.remove('btn-primary');
+                signInBtn.classList.add('btn-danger');
+
+                showStatus('authStatus', 'Ready! Click "Complete Sign In" to authenticate', 'success');
+                log('Options ready. Click button again to authenticate.');
+
+            } catch (error) {
+                showStatus('authStatus', `Error: ${error.message}`, 'error');
+                log(`Auth prep error: ${error.message}`);
+            }
+        }
+
+        // Step 2: Perform credential assertion (DIRECT call from user gesture)
+        async function performAuthentication() {
+            if (!authenticationOptions) {
+                showStatus('authStatus', 'Error: Please start sign-in first', 'error');
+                return;
+            }
+
+            try {
+                // Get credential - DIRECT CALL from user gesture (no async before this!)
+                log('Requesting credential assertion...');
+                const credential = await navigator.credentials.get({ publicKey: authenticationOptions });
+                log('Credential assertion received');
+
+                // Prepare response
+                const response = {
+                    id: credential.id,
+                    rawId: base64URLEncode(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        clientDataJSON: base64URLEncode(credential.response.clientDataJSON),
+                        authenticatorData: base64URLEncode(credential.response.authenticatorData),
+                        signature: base64URLEncode(credential.response.signature),
+                        userHandle: credential.response.userHandle
+                            ? base64URLEncode(credential.response.userHandle)
+                            : null
+                    },
+                    clientExtensionResults: credential.getClientExtensionResults()
+                };
+
+                // Verify with server
+                const verifyRes = await fetch(`${API_BASE}/api/authenticate/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response, challengeId: authChallengeId })
+                });
+                const result = await verifyRes.json();
+
+                if (result.verified) {
+                    showStatus('authStatus', `Signed in as: ${result.username}`, 'success');
+                    log(`Authentication successful: ${result.username}`);
+
+                    // Build success page URL with user details
+                    const params = new URLSearchParams({
+                        username: result.username,
+                        isDeviceBound: result.isDeviceBound || false,
+                        isThirdPartyExtension: result.isThirdPartyExtension || false,
+                        credentialBackedUp: result.credentialBackedUp || false,
+                        registrationMethod: result.registrationMethod || 'browser',
+                        counterIncremented: result.counterIncremented || false
+                    });
+
+                    // Redirect to success page (website handles both web and app notification)
+                    window.location.href = `/success.html?${params.toString()}`;
+                } else {
+                    showStatus('authStatus', `Authentication failed: ${result.error || 'Unknown error'}`, 'error');
+                    log(`Authentication failed: ${JSON.stringify(result)}`);
+                }
+
+                // Reset button
+                resetAuthButton();
+
+            } catch (error) {
+                showStatus('authStatus', `Error: ${error.message}`, 'error');
+                log(`Authentication error: ${error.message}`);
+
+                // Provide helpful guidance based on error
+                if (error.message.includes('timed out') || error.message.includes('not allowed')) {
+                    log('HINT: This error often means:');
+                    log('  1. No matching passkey found for this RP ID');
+                    log('  2. The passkey was created by iOS app but not shared with Safari');
+                    log('  3. Try using the iOS app to authenticate instead');
+                }
+
+                // Reset button
+                resetAuthButton();
+            }
+        }
+
+        function resetAuthButton() {
+            const signInBtn = document.querySelector('button[onclick="performAuthentication()"]');
+            if (signInBtn) {
+                signInBtn.textContent = 'Sign In';
+                signInBtn.onclick = authenticatePasskey;
+                signInBtn.classList.remove('btn-danger');
+                signInBtn.classList.add('btn-primary');
+            }
+            authenticationOptions = null;
+            authChallengeId = null;
+            authUsername = null;
+        }
+
+        // Cross-Device Authentication - presents QR code for mobile device
+        async function authenticateCrossDevice() {
+            try {
+                // Abort any pending conditional UI request first
+                if (conditionalAbortController) {
+                    log('Aborting background conditional UI request...');
+                    conditionalAbortController.abort();
+                    conditionalAbortController = null;
+                }
+
+                log('Starting cross-device (hybrid) authentication...');
+                showStatus('authStatus', 'Preparing QR code...', 'info');
+
+                // Get authentication options from server
+                const optionsRes = await fetch(`${API_BASE}/api/authenticate/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: null })
+                });
+                const options = await optionsRes.json();
+
+                if (options.error) {
+                    showStatus('authStatus', `Error: ${options.error}`, 'error');
+                    return;
+                }
+
+                const challengeId = options._challengeId;
+                delete options._challengeId;
+
+                // Convert for WebAuthn API
+                options.challenge = base64URLDecode(options.challenge);
+                if (options.allowCredentials) {
+                    options.allowCredentials = options.allowCredentials.map(cred => ({
+                        ...cred,
+                        id: base64URLDecode(cred.id)
+                    }));
+                }
+
+                log('Requesting credential with hybrid transport (QR code)...');
+                showStatus('authStatus', 'Scan the QR code with your phone', 'info');
+
+                // Request credential with hybrid transport for cross-device auth
+                // This should trigger the QR code flow
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        ...options,
+                        // For cross-device, we use allowCredentials with hybrid transport
+                        // or empty allowCredentials for discoverable credentials
+                        allowCredentials: [],
+                        // Hint to prefer hybrid/cross-device authenticators
+                        // Note: 'hints' is WebAuthn Level 3, may not be supported yet
+                        hints: ['hybrid']
+                    },
+                    mediation: 'optional'
+                });
+
+                log('Credential received from cross-device auth');
+
+                // Prepare response
+                const response = {
+                    id: credential.id,
+                    rawId: base64URLEncode(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        clientDataJSON: base64URLEncode(credential.response.clientDataJSON),
+                        authenticatorData: base64URLEncode(credential.response.authenticatorData),
+                        signature: base64URLEncode(credential.response.signature),
+                        userHandle: credential.response.userHandle
+                            ? base64URLEncode(credential.response.userHandle)
+                            : null
+                    },
+                    clientExtensionResults: credential.getClientExtensionResults()
+                };
+
+                // Verify with server
+                const verifyRes = await fetch(`${API_BASE}/api/authenticate/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response, challengeId: challengeId })
+                });
+                const result = await verifyRes.json();
+
+                if (result.verified) {
+                    showStatus('authStatus', `Signed in as: ${result.username}`, 'success');
+                    log(`Cross-device authentication successful: ${result.username}`);
+
+                    const params = new URLSearchParams({
+                        username: result.username,
+                        isDeviceBound: result.isDeviceBound || false,
+                        isThirdPartyExtension: result.isThirdPartyExtension || false,
+                        credentialBackedUp: result.credentialBackedUp || false,
+                        registrationMethod: result.registrationMethod || 'browser',
+                        counterIncremented: result.counterIncremented || false
+                    });
+                    window.location.href = `/success.html?${params.toString()}`;
+                } else {
+                    showStatus('authStatus', `Authentication failed: ${result.error || 'Unknown error'}`, 'error');
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    showStatus('authStatus', 'Authentication cancelled', 'info');
+                } else {
+                    showStatus('authStatus', `Error: ${error.message}`, 'error');
+                    log(`Cross-device auth error: ${error.name} - ${error.message}`);
+                }
+            }
+        }
+
+        // Conditional UI Authentication - allows iOS third-party credential providers to appear
+        // This uses mediation: 'conditional' which triggers the iOS Autofill UI
+        async function authenticateConditional() {
+            try {
+                log('Starting Conditional UI authentication...');
+                showStatus('authStatus', 'Waiting for autofill...', 'info');
+
+                // Check if conditional mediation is supported
+                if (typeof PublicKeyCredential !== 'undefined' &&
+                    typeof PublicKeyCredential.isConditionalMediationAvailable === 'function') {
+                    const available = await PublicKeyCredential.isConditionalMediationAvailable();
+                    log(`Conditional mediation available: ${available}`);
+                    if (!available) {
+                        showStatus('authStatus', 'Conditional UI not supported in this browser', 'error');
+                        return;
+                    }
+                } else {
+                    log('isConditionalMediationAvailable not supported, trying anyway...');
+                }
+
+                // Get authentication options from server (discoverable mode, no username)
+                const optionsRes = await fetch(`${API_BASE}/api/authenticate/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: null })
+                });
+                const options = await optionsRes.json();
+
+                if (options.error) {
+                    showStatus('authStatus', `Error: ${options.error}`, 'error');
+                    log(`Auth options error: ${options.error}`);
+                    return;
+                }
+
+                const challengeId = options._challengeId;
+                delete options._challengeId;
+
+                log(`Got conditional auth options: challenge=${options.challenge.substring(0, 20)}...`);
+
+                // Convert for WebAuthn API
+                options.challenge = base64URLDecode(options.challenge);
+                if (options.allowCredentials) {
+                    options.allowCredentials = options.allowCredentials.map(cred => ({
+                        ...cred,
+                        id: base64URLDecode(cred.id)
+                    }));
+                }
+
+                // Request credential with conditional mediation
+                // This shows the iOS Autofill UI where third-party credential providers appear
+                log('Calling navigator.credentials.get with mediation: conditional');
+                showStatus('authStatus', 'Tap the username field to see autofill suggestions', 'info');
+
+                const credential = await navigator.credentials.get({
+                    publicKey: options,
+                    mediation: 'conditional'  // This is the key! Enables autofill UI
+                });
+
+                log('Credential received from conditional UI');
+
+                // Prepare response
+                const response = {
+                    id: credential.id,
+                    rawId: base64URLEncode(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        clientDataJSON: base64URLEncode(credential.response.clientDataJSON),
+                        authenticatorData: base64URLEncode(credential.response.authenticatorData),
+                        signature: base64URLEncode(credential.response.signature),
+                        userHandle: credential.response.userHandle
+                            ? base64URLEncode(credential.response.userHandle)
+                            : null
+                    },
+                    clientExtensionResults: credential.getClientExtensionResults()
+                };
+
+                // Verify with server
+                const verifyRes = await fetch(`${API_BASE}/api/authenticate/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response, challengeId: challengeId })
+                });
+                const result = await verifyRes.json();
+
+                if (result.verified) {
+                    showStatus('authStatus', `Signed in as: ${result.username}`, 'success');
+                    log(`Conditional authentication successful: ${result.username}`);
+
+                    // Redirect to success page
+                    const params = new URLSearchParams({
+                        username: result.username,
+                        isDeviceBound: result.isDeviceBound || false,
+                        isThirdPartyExtension: result.isThirdPartyExtension || false,
+                        credentialBackedUp: result.credentialBackedUp || false,
+                        registrationMethod: result.registrationMethod || 'browser',
+                        counterIncremented: result.counterIncremented || false
+                    });
+                    window.location.href = `/success.html?${params.toString()}`;
+                } else {
+                    showStatus('authStatus', `Authentication failed: ${result.error || 'Unknown error'}`, 'error');
+                    log(`Conditional authentication failed: ${JSON.stringify(result)}`);
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    showStatus('authStatus', 'Authentication was cancelled', 'info');
+                    log('Conditional authentication aborted by user');
+                } else {
+                    showStatus('authStatus', `Error: ${error.message}`, 'error');
+                    log(`Conditional authentication error: ${error.name} - ${error.message}`);
+                }
+            }
+        }
+
+        // Auto-start conditional UI when page loads (for seamless autofill experience)
+        // This starts the conditional request in the background
+        let conditionalAbortController = null;
+
+        async function startConditionalUIBackground() {
+            // Only start if supported
+            if (typeof PublicKeyCredential === 'undefined' ||
+                typeof PublicKeyCredential.isConditionalMediationAvailable !== 'function') {
+                log('Conditional UI not supported - skipping background start');
+                return;
+            }
+
+            const available = await PublicKeyCredential.isConditionalMediationAvailable();
+            if (!available) {
+                log('Conditional mediation not available');
+                return;
+            }
+
+            log('Starting background conditional UI listener...');
+
+            try {
+                // Get authentication options
+                const optionsRes = await fetch(`${API_BASE}/api/authenticate/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: null })
+                });
+                const options = await optionsRes.json();
+
+                if (options.error) {
+                    log(`Background conditional options error: ${options.error}`);
+                    return;
+                }
+
+                const challengeId = options._challengeId;
+                delete options._challengeId;
+
+                options.challenge = base64URLDecode(options.challenge);
+                if (options.allowCredentials) {
+                    options.allowCredentials = options.allowCredentials.map(cred => ({
+                        ...cred,
+                        id: base64URLDecode(cred.id)
+                    }));
+                }
+
+                // Create abort controller for cleanup
+                conditionalAbortController = new AbortController();
+
+                // Start conditional request - this will wait until user interacts with autofill
+                const credential = await navigator.credentials.get({
+                    publicKey: options,
+                    mediation: 'conditional',
+                    signal: conditionalAbortController.signal
+                });
+
+                log('Background conditional UI received credential!');
+
+                // Process the credential
+                const response = {
+                    id: credential.id,
+                    rawId: base64URLEncode(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        clientDataJSON: base64URLEncode(credential.response.clientDataJSON),
+                        authenticatorData: base64URLEncode(credential.response.authenticatorData),
+                        signature: base64URLEncode(credential.response.signature),
+                        userHandle: credential.response.userHandle
+                            ? base64URLEncode(credential.response.userHandle)
+                            : null
+                    },
+                    clientExtensionResults: credential.getClientExtensionResults()
+                };
+
+                const verifyRes = await fetch(`${API_BASE}/api/authenticate/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential: response, challengeId: challengeId })
+                });
+                const result = await verifyRes.json();
+
+                if (result.verified) {
+                    showStatus('authStatus', `Signed in as: ${result.username}`, 'success');
+                    log(`Background conditional auth successful: ${result.username}`);
+
+                    const params = new URLSearchParams({
+                        username: result.username,
+                        isDeviceBound: result.isDeviceBound || false,
+                        isThirdPartyExtension: result.isThirdPartyExtension || false,
+                        credentialBackedUp: result.credentialBackedUp || false,
+                        registrationMethod: result.registrationMethod || 'browser',
+                        counterIncremented: result.counterIncremented || false
+                    });
+                    window.location.href = `/success.html?${params.toString()}`;
+                } else {
+                    showStatus('authStatus', `Authentication failed: ${result.error}`, 'error');
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    log('Background conditional UI aborted');
+                } else {
+                    log(`Background conditional error: ${error.message}`);
+                }
+            }
+        }
+
+        // DISABLED: Start conditional UI after page load
+        // This was causing "The operation timed out or was not allowed" errors
+        // because concurrent WebAuthn requests conflict with each other.
+        // See: https://stackoverflow.com/questions/79700602
+        // setTimeout(startConditionalUIBackground, 1000);
+
+        // Demo controls
+        async function toggleAASA() {
+            try {
+                const res = await fetch(`${API_BASE}/api/debug/toggle-aasa`, { method: 'POST' });
+                const result = await res.json();
+                showStatus('demoStatus', result.message, 'info');
+                log(`AASA toggle: ${result.message}`);
+                document.getElementById('toggleAASA').checked = result.simulateNoAASA;
+            } catch (error) {
+                log(`Toggle error: ${error.message}`);
+            }
+        }
+
+        async function checkAASA() {
+            try {
+                const res = await fetch(`${API_BASE}/.well-known/apple-app-site-association`);
+                if (res.ok) {
+                    const aasa = await res.json();
+                    showStatus('demoStatus', `AASA OK: ${JSON.stringify(aasa.webcredentials?.apps || [])}`, 'success');
+                    log(`AASA check: OK`);
+                } else {
+                    showStatus('demoStatus', `AASA returned ${res.status} - iOS will show "no passkeys"`, 'error');
+                    log(`AASA check: ${res.status}`);
+                }
+            } catch (error) {
+                showStatus('demoStatus', `AASA error: ${error.message}`, 'error');
+                log(`AASA check error: ${error.message}`);
+            }
+        }
+
+        async function resetData() {
+            if (!confirm('Reset all users and credentials?')) return;
+            try {
+                await fetch(`${API_BASE}/api/debug/reset`, { method: 'POST' });
+                showStatus('demoStatus', 'All data cleared', 'info');
+                log('Data reset');
+                loadUsers();
+            } catch (error) {
+                log(`Reset error: ${error.message}`);
+            }
+        }
+
+        async function deleteCredential(username, credentialId) {
+            if (!confirm(`Delete this passkey for ${username}?`)) return;
+            try {
+                const res = await fetch(`${API_BASE}/api/credential/${encodeURIComponent(username)}/${encodeURIComponent(credentialId)}`, {
+                    method: 'DELETE'
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    showStatus('demoStatus', `Passkey deleted${result.userDeleted ? ' (user removed)' : ''}`, 'info');
+                    log(`Credential deleted for ${username}`);
+                    loadUsers();
+                } else {
+                    showStatus('demoStatus', `Delete failed: ${result.error}`, 'error');
+                    log(`Delete error: ${result.error}`);
+                }
+            } catch (error) {
+                showStatus('demoStatus', `Delete error: ${error.message}`, 'error');
+                log(`Delete error: ${error.message}`);
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API_BASE}/api/debug/users`);
+                const users = await res.json();
+                const list = document.getElementById('userList');
+
+                // Update banner stats
+                const totalUsers = users.length;
+                const totalPasskeys = users.reduce((sum, u) => sum + u.credentialCount, 0);
+                document.getElementById('totalUsers').textContent = totalUsers;
+                document.getElementById('totalPasskeys').textContent = totalPasskeys;
+                document.getElementById('lastUpdate').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+                // Update passkey details in banner
+                const detailsEl = document.getElementById('passkeyDetails');
+                if (totalPasskeys === 0) {
+                    detailsEl.innerHTML = '<div style="opacity: 0.8; font-size: 14px;">No passkeys registered yet</div>';
+                } else {
+                    const allPasskeys = users.flatMap(u =>
+                        u.credentials.map(c => ({
+                            username: u.username,
+                            ...c
+                        }))
+                    );
+                    // SECURITY: Escape all user-provided data to prevent XSS
+                    detailsEl.innerHTML = allPasskeys.map(p => {
+                        const deviceBound = p.isDeviceBound ? '🔒' : '☁️';
+                        const method = p.registrationMethod === 'direct-ios-extension' ? 'iOS App' : 'Browser';
+                        const safeUsername = escapeHtml(p.username);
+                        const safeId = escapeHtml(p.id ? p.id.substring(0, 24) : 'N/A');
+                        // Use data attributes for delete to avoid inline onclick XSS
+                        return `<div style="background: rgba(255,255,255,0.15); padding: 10px; border-radius: 8px; margin-bottom: 8px; position: relative;">
+                            <button class="delete-btn" data-username="${escapeHtml(p.username)}" data-credid="${escapeHtml(p.id)}"
+                                style="position: absolute; top: 8px; right: 8px; background: rgba(220,53,69,0.9); color: white; border: none; border-radius: 4px; width: 22px; height: 22px; cursor: pointer; font-size: 14px; line-height: 1;"
+                                title="Delete this passkey">×</button>
+                            <div style="font-weight: bold; font-size: 16px;">${deviceBound} ${safeUsername}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">Registered via: ${method}</div>
+                            <div style="font-size: 11px; opacity: 0.7; font-family: monospace; word-break: break-all;">ID: ${safeId}...</div>
+                        </div>`;
+                    }).join('');
+                    // Add click handlers for delete buttons
+                    detailsEl.querySelectorAll('.delete-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            deleteCredential(btn.dataset.username, btn.dataset.credid);
+                        });
+                    });
+                }
+
+                // Update user list with credential details
+                // SECURITY: Escape all user-provided data to prevent XSS
+                if (users.length === 0) {
+                    list.innerHTML = '<li>No users registered</li>';
+                } else {
+                    list.innerHTML = users.map(u => {
+                        const safeUsername = escapeHtml(u.username);
+                        const credDetails = u.credentials.map(c => {
+                            const deviceBound = c.isDeviceBound ? '🔒 Device-Bound' : '☁️ Synced';
+                            const method = c.registrationMethod === 'direct-ios-extension' ? '(iOS App)' : '(Browser)';
+                            const safeId = escapeHtml(c.id ? c.id.substring(0, 20) : 'N/A');
+                            const safeDate = escapeHtml(c.createdAt ? new Date(c.createdAt).toLocaleString() : 'Unknown');
+                            return `<div style="font-size: 12px; margin-left: 12px; color: #666; display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px;">
+                                <div style="flex: 1;">
+                                    ${deviceBound} ${method}<br>
+                                    <code style="font-size: 10px;">${safeId}...</code><br>
+                                    <span style="font-size: 10px;">Created: ${safeDate}</span>
+                                </div>
+                                <button class="cred-delete-btn" data-username="${escapeHtml(u.username)}" data-credid="${escapeHtml(c.id)}"
+                                    style="background: #dc3545; color: white; border: none; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center;"
+                                    title="Delete this passkey">×</button>
+                            </div>`;
+                        }).join('');
+                        return `<li style="padding: 12px;">
+                            <strong>${safeUsername}</strong> - ${u.credentialCount} passkey(s)
+                            ${credDetails}
+                        </li>`;
+                    }).join('');
+                    // Add click handlers for delete buttons
+                    list.querySelectorAll('.cred-delete-btn').forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            deleteCredential(btn.dataset.username, btn.dataset.credid);
+                        });
+                    });
+                }
+            } catch (error) {
+                log(`Load users error: ${error.message}`);
+            }
+        }
+
+        // Initial load
+        loadUsers();
+        checkAASA();
+
+        // Auto-refresh stats every 5 seconds
+        setInterval(loadUsers, 5000);
+    </script>
+</body>
+</html>

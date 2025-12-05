@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>Passkey Demo Provider</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>$(PRODUCT_NAME)</string>
+    <key>CFBundlePackageType</key>
+    <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <!-- Extension Configuration -->
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionAttributes</key>
+        <dict>
+            <!-- CRITICAL: Credential Provider Capabilities -->
+            <key>ASCredentialProviderExtensionCapabilities</key>
+            <dict>
+                <!-- Enable passkey support -->
+                <key>ProvidesPasskeys</key>
+                <true/>
+                <!-- Enable password support (optional) -->
+                <key>ProvidesPasswords</key>
+                <true/>
+                <!-- iOS 18+: Enable one-time codes -->
+                <key>ProvidesOneTimeCodes</key>
+                <false/>
+                <!-- iOS 18+: Conditional passkey registration requires non-UI handlers
+                     We only implement UI-based flow via prepareInterface, so set to false -->
+                <key>SupportsConditionalPasskeyRegistration</key>
+                <false/>
+            </dict>
+        </dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.authentication-services-credential-provider-ui</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).CredentialProviderViewController</string>
+    </dict>
+
+    <!-- Face ID for the extension -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>Authenticate to use your device-bound passkey</string>
+</dict>
+</plist>

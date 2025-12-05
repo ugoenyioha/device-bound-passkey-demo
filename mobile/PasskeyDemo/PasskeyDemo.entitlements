@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- AutoFill Credential Provider - Required for extension to appear -->
+    <key>com.apple.developer.authentication-services.autofill-credential-provider</key>
+    <true/>
+
+    <!-- Associated Domains - CRITICAL for passkeys -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <!-- Production domain -->
+        <string>webcredentials:passkeydemo.usableapps.local</string>
+        <string>webcredentials:passkeydemo.usableapps.local?mode=developer</string>
+        <!-- Localhost for local testing -->
+        <string>webcredentials:localhost</string>
+        <string>webcredentials:localhost?mode=developer</string>
+    </array>
+    <!-- App Groups - For sharing data with extension -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>group.com.demo.PasskeyDemo</string>
+    </array>
+
+    <!-- Keychain Access Groups -->
+    <key>keychain-access-groups</key>
+    <array>
+        <string>$(AppIdentifierPrefix)com.demo.PasskeyDemo</string>
+    </array>
+</dict>
+</plist>
