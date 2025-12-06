@@ -1086,12 +1086,32 @@ class CredentialProviderViewController: ASCredentialProviderViewController {
     }
 
     // iOS 17+ passkey assertion without user interaction
+    // The Secure Enclave key access with .biometryCurrentSet will trigger Face ID/Touch ID automatically
     override func provideCredentialWithoutUserInteraction(for credentialRequest: ASCredentialRequest) {
         remoteLog("provideCredentialWithoutUserInteraction (ASCredentialRequest) called")
         remoteLog("Request type: \(type(of: credentialRequest))")
 
-        // We always require user interaction for passkey assertions (biometric auth)
-        extensionContext.cancelRequest(withError: ASExtensionError(.userInteractionRequired))
+        guard let passkeyRequest = credentialRequest as? ASPasskeyCredentialRequest,
+              let identity = passkeyRequest.credentialIdentity as? ASPasskeyCredentialIdentity else {
+            remoteLog("provideCredentialWithoutUserInteraction: Not a passkey request", level: "ERROR")
+            extensionContext.cancelRequest(withError: ASExtensionError(.failed))
+            return
+        }
+
+        remoteLog("provideCredentialWithoutUserInteraction: RP=\(identity.relyingPartyIdentifier), user=\(identity.userName)")
+
+        // Find the stored credential
+        let credentials = store.getPasskeyCredentials(for: identity.relyingPartyIdentifier)
+        guard let storedCredential = credentials.first(where: { $0.credentialID == identity.credentialID }) else {
+            remoteLog("provideCredentialWithoutUserInteraction: Credential not found", level: "ERROR")
+            extensionContext.cancelRequest(withError: ASExtensionError(.credentialIdentityNotFound))
+            return
+        }
+
+        remoteLog("provideCredentialWithoutUserInteraction: Found credential, performing assertion directly")
+
+        // Perform assertion directly - Secure Enclave will trigger biometric prompt automatically
+        performAssertionWithClientDataHash(credential: storedCredential, clientDataHash: passkeyRequest.clientDataHash)
     }
 
     // NOTE: Removed prepareInterfaceToProvideCredential(for credentialIdentity: ASPasswordCredentialIdentity)
