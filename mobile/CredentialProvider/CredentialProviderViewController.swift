@@ -62,14 +62,16 @@ class CredentialProviderViewController: ASCredentialProviderViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .systemBackground
-        logger.info("TEST #12: viewDidLoad")
-        remoteLog("EXTENSION: viewDidLoad - extension is being loaded!")
+        // Note: iOS controls the credential provider extension sheet presentation.
+        // We cannot make it transparent or skip it - this is by design for security.
+        // See research: Share/credential provider extensions use system-controlled sheets.
+        logger.info("CredentialProvider: viewDidLoad")
+        remoteLog("EXTENSION: viewDidLoad")
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        remoteLog("EXTENSION: viewWillAppear - UI about to appear")
+        remoteLog("EXTENSION: viewWillAppear")
     }
 
     override func prepareInterface(forPasskeyRegistration registrationRequest: ASCredentialRequest) {
@@ -778,61 +780,89 @@ class CredentialProviderViewController: ASCredentialProviderViewController {
         // Clear existing views
         view.subviews.forEach { $0.removeFromSuperview() }
 
-        // Title label
-        let titleLabel = UILabel()
-        titleLabel.text = "Sign In with Passkey"
-        titleLabel.font = .boldSystemFont(ofSize: 24)
-        titleLabel.textAlignment = .center
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(titleLabel)
+        // Style the view with a clean dark background
+        view.backgroundColor = UIColor.systemBackground
 
-        // Info label
-        let infoLabel = UILabel()
-        infoLabel.text = "User: \(userName)\nSite: \(rpID)"
-        infoLabel.numberOfLines = 0
-        infoLabel.textAlignment = .center
-        infoLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(infoLabel)
+        // Container for vertical centering
+        let containerView = UIView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(containerView)
 
-        // Sign In button
-        let signInButton = UIButton(type: .system)
-        signInButton.setTitle("Sign In", for: .normal)
-        signInButton.titleLabel?.font = .boldSystemFont(ofSize: 18)
-        signInButton.backgroundColor = .systemGreen
-        signInButton.setTitleColor(.white, for: .normal)
-        signInButton.layer.cornerRadius = 12
-        signInButton.translatesAutoresizingMaskIntoConstraints = false
-        signInButton.addTarget(self, action: #selector(signInButtonTapped), for: .touchUpInside)
-        view.addSubview(signInButton)
+        // Face ID icon using SF Symbol
+        let iconImageView = UIImageView()
+        if let faceIDImage = UIImage(systemName: "faceid") {
+            iconImageView.image = faceIDImage
+        }
+        iconImageView.tintColor = .systemBlue
+        iconImageView.contentMode = .scaleAspectFit
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(iconImageView)
 
-        // Cancel button
-        let cancelButton = UIButton(type: .system)
-        cancelButton.setTitle("Cancel", for: .normal)
-        cancelButton.translatesAutoresizingMaskIntoConstraints = false
-        cancelButton.addTarget(self, action: #selector(cancelButtonTapped), for: .touchUpInside)
-        view.addSubview(cancelButton)
+        // Provider name label
+        let providerLabel = UILabel()
+        providerLabel.text = "PasskeyDemo"
+        providerLabel.font = .systemFont(ofSize: 22, weight: .semibold)
+        providerLabel.textColor = .label
+        providerLabel.textAlignment = .center
+        providerLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(providerLabel)
 
-        // Layout
+        // Status message
+        let statusLabel = UILabel()
+        statusLabel.text = "Signing in as \(userName)"
+        statusLabel.font = .systemFont(ofSize: 15, weight: .regular)
+        statusLabel.textColor = .secondaryLabel
+        statusLabel.textAlignment = .center
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(statusLabel)
+
+        // Activity indicator
+        let activityIndicator = UIActivityIndicatorView(style: .medium)
+        activityIndicator.color = .systemBlue
+        activityIndicator.startAnimating()
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(activityIndicator)
+
+        // Layout constraints
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 40),
-            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            // Container centered in view
+            containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            containerView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
+            containerView.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 40),
+            containerView.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -40),
 
-            infoLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 20),
-            infoLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            infoLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            // Face ID icon
+            iconImageView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            iconImageView.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            iconImageView.widthAnchor.constraint(equalToConstant: 60),
+            iconImageView.heightAnchor.constraint(equalToConstant: 60),
 
-            signInButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            signInButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-            signInButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40),
-            signInButton.heightAnchor.constraint(equalToConstant: 50),
+            // Provider label
+            providerLabel.topAnchor.constraint(equalTo: iconImageView.bottomAnchor, constant: 16),
+            providerLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            providerLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            providerLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
 
-            cancelButton.topAnchor.constraint(equalTo: signInButton.bottomAnchor, constant: 20),
-            cancelButton.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            // Status label
+            statusLabel.topAnchor.constraint(equalTo: providerLabel.bottomAnchor, constant: 8),
+            statusLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            statusLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            statusLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+
+            // Activity indicator
+            activityIndicator.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 20),
+            activityIndicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            activityIndicator.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
         ])
+
+        // Auto-trigger Face ID after a brief moment to show the UI
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.signInButtonTapped()
+        }
     }
 
     @objc private func signInButtonTapped() {
-        remoteLog("ASSERTION: Sign In button tapped")
+        remoteLog("ASSERTION: Sign In triggered")
 
         // Check which flow we're in:
         // 1. prepareInterfaceToProvideCredential flow: has pendingAssertionRequest + pendingStoredCredential
@@ -857,22 +887,20 @@ class CredentialProviderViewController: ASCredentialProviderViewController {
             return
         }
 
-        // Perform biometric authentication
+        // Trigger biometric authentication - required for Secure Enclave key access
         let context = LAContext()
         context.evaluatePolicy(
-            .deviceOwnerAuthentication,
-            localizedReason: "Sign in as \(credential.userName)"
+            .deviceOwnerAuthenticationWithBiometrics,
+            localizedReason: "Sign in to \(credential.relyingPartyIdentifier)"
         ) { [weak self] success, error in
-            guard let self = self else { return }
-
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 if success {
-                    self.remoteLog("ASSERTION: Biometric auth succeeded")
+                    self.remoteLog("ASSERTION: Biometric succeeded")
                     self.performAssertionWithClientDataHash(credential: credential, clientDataHash: clientDataHash)
                 } else {
-                    self.remoteLog("ASSERTION: Auth failed, trying anyway: \(error?.localizedDescription ?? "unknown")")
-                    // Try anyway for testing
-                    self.performAssertionWithClientDataHash(credential: credential, clientDataHash: clientDataHash)
+                    self.remoteLog("ASSERTION: Biometric failed: \(error?.localizedDescription ?? "unknown")", level: "ERROR")
+                    self.extensionContext.cancelRequest(withError: ASExtensionError(.userCanceled))
                 }
             }
         }
@@ -1086,32 +1114,10 @@ class CredentialProviderViewController: ASCredentialProviderViewController {
     }
 
     // iOS 17+ passkey assertion without user interaction
-    // The Secure Enclave key access with .biometryCurrentSet will trigger Face ID/Touch ID automatically
+    // CONFIRMED: iOS does not allow biometric (Face ID) in this method - it requires the UI sheet
     override func provideCredentialWithoutUserInteraction(for credentialRequest: ASCredentialRequest) {
-        remoteLog("provideCredentialWithoutUserInteraction (ASCredentialRequest) called")
-        remoteLog("Request type: \(type(of: credentialRequest))")
-
-        guard let passkeyRequest = credentialRequest as? ASPasskeyCredentialRequest,
-              let identity = passkeyRequest.credentialIdentity as? ASPasskeyCredentialIdentity else {
-            remoteLog("provideCredentialWithoutUserInteraction: Not a passkey request", level: "ERROR")
-            extensionContext.cancelRequest(withError: ASExtensionError(.failed))
-            return
-        }
-
-        remoteLog("provideCredentialWithoutUserInteraction: RP=\(identity.relyingPartyIdentifier), user=\(identity.userName)")
-
-        // Find the stored credential
-        let credentials = store.getPasskeyCredentials(for: identity.relyingPartyIdentifier)
-        guard let storedCredential = credentials.first(where: { $0.credentialID == identity.credentialID }) else {
-            remoteLog("provideCredentialWithoutUserInteraction: Credential not found", level: "ERROR")
-            extensionContext.cancelRequest(withError: ASExtensionError(.credentialIdentityNotFound))
-            return
-        }
-
-        remoteLog("provideCredentialWithoutUserInteraction: Found credential, performing assertion directly")
-
-        // Perform assertion directly - Secure Enclave will trigger biometric prompt automatically
-        performAssertionWithClientDataHash(credential: storedCredential, clientDataHash: passkeyRequest.clientDataHash)
+        remoteLog("provideCredentialWithoutUserInteraction - biometric requires UI, requesting user interaction")
+        extensionContext.cancelRequest(withError: ASExtensionError(.userInteractionRequired))
     }
 
     // NOTE: Removed prepareInterfaceToProvideCredential(for credentialIdentity: ASPasswordCredentialIdentity)

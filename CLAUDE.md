@@ -31,11 +31,37 @@ Assertion:    0x1D = UP(0x01) + UV(0x04) + BE(0x08) + BS(0x10)
 - Random challenge: Primary replay defense
 - Counter: Secondary signal for cloned authenticator detection
 
+### Credential Provider Extension Sheet (iOS Platform Limitation)
+
+**Problem**: When user taps "Use Passkey", iOS presents a sheet before Face ID appears. Can this be hidden or made transparent?
+
+**Answer**: No - this is an intentional iOS platform limitation.
+
+**Research Findings**:
+1. **System-controlled presentation**: iOS presents credential provider extensions using `UISheetPresentationController` with system-controlled detents. Developers cannot customize the sheet container.
+
+2. **`NSExtensionActionWantsFullScreenPresentation`**: This Info.plist key only works for **Action extensions**, not credential provider extensions. See [Apple's App Extension Keys documentation](https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/AppExtensionKeys.html).
+
+3. **`provideCredentialWithoutUserInteraction`**: Cannot use biometrics - iOS requires the UI sheet for Face ID/Touch ID. This method is for silent credential provision only (e.g., from unlocked keychain).
+
+4. **Industry consensus**: Bitwarden, Strongbox, and other password managers accept this limitation. None have found a workaround.
+
+5. **Apple Engineer confirmation**: In [Apple Developer Forums thread #694643](https://developer.apple.com/forums/thread/694643), regarding share extensions: "When asked if there is a way to customize the detents... the answer is unfortunately no."
+
+**Solution**: Transform the mandatory sheet into useful visual feedback:
+- Show provider branding and Face ID icon
+- Display "Signing in as [username]" status
+- Activity indicator while authentication proceeds
+- Auto-trigger Face ID after 0.3s delay
+
+This follows iOS design patterns and provides clear security context to users about which credential provider is active.
+
 ## Known Limitations (Document for RPs)
 1. **AAGUID**: Zero (anonymous) - production should register with FIDO Alliance
 2. **App Attestation**: Received but not verified against Apple CA chain
 3. **Counter enforcement**: Logs warning, doesn't reject (enable strict mode for production)
 4. **Debug endpoints**: Exposed at `/api/debug/*` - remove in production
+5. **Extension sheet**: Cannot be hidden (iOS platform limitation) - shows branded status UI instead
 
 ## File Locations
 
